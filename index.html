@@ -1,0 +1,58 @@
+<script>
+(function() {
+    // 1. Определение iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    // 2. Обновлённые паттерны ботов (исключены мобильные приложения)
+    const BOT_PATTERNS = [
+        /Googlebot/, /Bingbot/, /Slurp/, /DuckDuckBot/,
+        /YandexBot/, /baiduspider/, /facebookexternalhit/,
+        /rogerbot/, /linkedinbot/, /embedly/
+    ];
+
+    // 3. Безопасная проверка автоматизации для iOS
+    const isAutomated = () => {
+        try {
+            if(isIOS) {
+                // Особые проверки для iOS
+                if(navigator.plugins.length > 0) return true; // iOS Safari всегда возвращает 0
+                if(navigator.languages.length === 0) return true;
+                return false;
+            }
+
+            // Общие проверки для других платформ
+            return navigator.webdriver || 
+                  (navigator.plugins.length === 0 && 
+                   navigator.mimeTypes.length > 0);
+        } catch(e) {
+            return false;
+        }
+    };
+
+    // 4. Главная проверка с учётом iOS
+    const shouldBlock = () => {
+        const ua = navigator.userAgent;
+        
+        // Исключаем iOS из некоторых проверок
+        if(isIOS) {
+            return BOT_PATTERNS.some(pattern => pattern.test(ua));
+        }
+
+        return BOT_PATTERNS.some(pattern => pattern.test(ua)) || isAutomated();
+    };
+
+    // 5. Запуск с учётом особенностей Safari
+    const init = () => {
+        if(shouldBlock()) {
+            window.location.replace('https://support.google.com/websearch');
+        }
+    };
+
+    // iOS требует загрузки DOM перед выполнением
+    if(isIOS) {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        setTimeout(init, 100);
+    }
+})();
+</script>
